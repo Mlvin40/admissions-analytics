@@ -1,0 +1,8 @@
+.env
+.env.*
+!.env.example
+.idea/
+/datas/ArchivosCSV/
+/datas/analisis/*.json
+
+.local/

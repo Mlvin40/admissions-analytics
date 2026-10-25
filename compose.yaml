@@ -1,0 +1,63 @@
+name: bd2-final
+
+services:
+  mongodb:
+    image: mongo:7.0.45-jammy
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME:?Definir MONGO_USERNAME en .env}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:?Definir MONGO_PASSWORD en .env}
+    ports:
+      - "127.0.0.1:27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+    networks:
+      - databases
+    healthcheck:
+      test:
+        - CMD
+        - mongosh
+        - --quiet
+        - --eval
+        - >-
+          const admin = db.getSiblingDB('admin');
+          admin.auth(process.env.MONGO_INITDB_ROOT_USERNAME, process.env.MONGO_INITDB_ROOT_PASSWORD);
+          const status = admin.runCommand({connectionStatus: 1});
+          if (status.authInfo.authenticatedUsers.length !== 1) quit(1);
+          if (admin.runCommand({ping: 1}).ok !== 1) quit(1);
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 30s
+
+  neo4j:
+    image: neo4j:5.26-community
+    environment:
+      NEO4J_AUTH: ${NEO4J_USERNAME:?Definir NEO4J_USERNAME en .env}/${NEO4J_PASSWORD:?Definir NEO4J_PASSWORD en .env}
+    ports:
+      - "127.0.0.1:7474:7474"
+      - "127.0.0.1:7687:7687"
+    volumes:
+      - neo4j_data:/data
+    networks:
+      - databases
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          NEO4J_USERNAME="$${NEO4J_AUTH%%/*}"
+          NEO4J_PASSWORD="$${NEO4J_AUTH#*/}"
+          cypher-shell -a bolt://localhost:7687 'RETURN 1 AS connected;' > /dev/null
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 45s
+
+volumes:
+  mongodb_data:
+  mongodb_config:
+  neo4j_data:
+
+networks:
+  databases:
+    driver: bridge

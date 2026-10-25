@@ -1,0 +1,18 @@
+spring:
+  application:
+    name: bd2-api
+  servlet:
+    multipart:
+      max-file-size: 16MB
+      max-request-size: 160MB
+      file-size-threshold: 0
+  mongodb:
+    uri: mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@127.0.0.1:27017/${MONGO_DATABASE}?authSource=admin&serverSelectionTimeoutMS=5000&connectTimeoutMS=5000
+  neo4j:
+    uri: bolt://127.0.0.1:7687
+    authentication:
+      username: ${NEO4J_USERNAME}
+      password: ${NEO4J_PASSWORD}
+
+bd2:
+  import-directory: ${BD2_IMPORT_DIRECTORY:.local/imports}
