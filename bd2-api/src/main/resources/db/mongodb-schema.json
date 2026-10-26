@@ -1,0 +1,17 @@
+{
+  "collection": "evaluations",
+  "validator": {"$jsonSchema": {"bsonType": "object", "required": ["_id", "applicant", "sources", "graphSyncState"], "properties": {
+    "_id": {"bsonType": "string"},
+    "applicant": {"bsonType": "object", "required": ["key", "correlativo_aspirante", "identityScheme"]},
+    "sources": {"bsonType": "array", "minItems": 1},
+    "graphSyncState": {"enum": ["PENDING", "SYNCED", "FAILED"]}
+  }}},
+  "indexes": [
+    {"name": "applicant_history", "keys": {"applicant.key": 1, "entryYear": 1, "assignmentDate": 1, "_id": 1}},
+    {"name": "entry_career", "keys": {"entryYear": 1, "career.key": 1}},
+    {"name": "subject_outcome", "keys": {"passed": 1, "subject.key": 1, "entryYear": 1}},
+    {"name": "institution_date", "keys": {"origin.institutionType.key": 1, "assignmentDate": 1}},
+    {"name": "geographic_context", "keys": {"origin.department.key": 1, "origin.municipality.key": 1, "career.key": 1}},
+    {"name": "graph_sync", "keys": {"graphSyncState": 1}}
+  ]
+}

@@ -1,0 +1,9 @@
+CREATE CONSTRAINT applicant_key IF NOT EXISTS FOR (n:Applicant) REQUIRE n.key IS UNIQUE;
+CREATE CONSTRAINT evaluation_key IF NOT EXISTS FOR (n:Evaluation) REQUIRE n.key IS UNIQUE;
+CREATE CONSTRAINT subject_key IF NOT EXISTS FOR (n:Subject) REQUIRE n.key IS UNIQUE;
+CREATE CONSTRAINT career_key IF NOT EXISTS FOR (n:Career) REQUIRE n.key IS UNIQUE;
+CREATE CONSTRAINT institution_type_key IF NOT EXISTS FOR (n:InstitutionType) REQUIRE n.key IS UNIQUE;
+CREATE CONSTRAINT municipality_key IF NOT EXISTS FOR (n:Municipality) REQUIRE n.key IS UNIQUE;
+CREATE CONSTRAINT department_key IF NOT EXISTS FOR (n:Department) REQUIRE n.key IS UNIQUE;
+CREATE RANGE INDEX evaluation_outcome IF NOT EXISTS FOR (n:Evaluation) ON (n.entryYear, n.passed);
+CREATE RANGE INDEX evaluation_opportunity IF NOT EXISTS FOR (n:Evaluation) ON (n.entryYear, n.opportunity);
