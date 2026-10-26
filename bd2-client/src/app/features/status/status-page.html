@@ -1,0 +1,66 @@
+<header class="page-heading">
+  <p class="eyebrow">DIAGNÓSTICO TÉCNICO</p>
+  <h1>Estado de conexión</h1>
+  <p>Comprueba la comunicación con la API y las bases de datos.</p>
+</header>
+<p-card>
+  <form [formGroup]="form" (ngSubmit)="check()" class="check-form">
+    <div class="field">
+      <label for="target">Conexiones a comprobar</label>
+      <p-select
+        inputId="target"
+        [options]="options"
+        optionLabel="label"
+        optionValue="value"
+        [formControl]="target"
+        [style]="{ width: '100%' }"
+      />
+    </div>
+    <p-button
+      type="submit"
+      label="Comprobar conexión"
+      [loading]="loading()"
+      [disabled]="loading()"
+    />
+  </form>
+  <section
+    class="results"
+    aria-live="polite"
+    [attr.aria-busy]="loading()"
+    aria-label="Resultado de conexión"
+  >
+    @if (loading()) {
+      <p-message severity="info">Comprobando conexiones…</p-message>
+    } @else if (error()) {
+      <p-message severity="error"
+        >No se pudo completar la comprobación. Verifica que la API esté disponible y vuelve a
+        intentarlo.</p-message
+      >
+    } @else if (result(); as status) {
+      <dl>
+        @for (
+          item of [
+            { name: 'API', state: status.api },
+            { name: 'MongoDB', state: status.mongodb },
+            { name: 'Neo4j', state: status.neo4j },
+          ];
+          track item.name
+        ) {
+          <div class="status-row">
+            <dt>{{ item.name }}</dt>
+            <dd>
+              <p-message
+                [severity]="
+                  item.state === 'UP' ? 'success' : item.state === 'DOWN' ? 'error' : 'secondary'
+                "
+                >{{ label(item.state) }}</p-message
+              >
+            </dd>
+          </div>
+        }
+      </dl>
+    } @else {
+      <p-message severity="secondary">Todavía no se han comprobado las conexiones.</p-message>
+    }
+  </section>
+</p-card>

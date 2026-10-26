@@ -1,0 +1,43 @@
+<a class="skip-link" href="#main-content">Ir al contenido</a>
+<header class="topbar">
+  <div class="topbar-inner">
+    <div>
+      <a class="brand" routerLink="/" aria-label="BD2 NoSQL, ir al inicio"
+        >BD2 <span>· NoSQL</span></a
+      >
+    </div>
+    <div>
+      <nav class="desktop-nav" aria-label="Navegación principal">
+        <a
+          routerLink="/"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+          ariaCurrentWhenActive="page"
+          >Inicio</a
+        >
+        <a routerLink="/analytics" routerLinkActive="active" ariaCurrentWhenActive="page"
+          >Consultas MongoDB</a
+        >
+        <a routerLink="/graph" routerLinkActive="active" ariaCurrentWhenActive="page"
+          >Grafos Neo4j</a
+        >
+        <a routerLink="/search" routerLinkActive="active" ariaCurrentWhenActive="page">Buscador</a>
+        <a routerLink="/data-import" routerLinkActive="active" ariaCurrentWhenActive="page"
+          >Carga CSV</a
+        >
+      </nav>
+      <div class="mobile-nav">
+        @defer (on viewport) {
+          <app-mobile-navigation />
+        } @placeholder {
+          <span>Menú</span>
+        }
+      </div>
+    </div>
+  </div>
+</header>
+<main id="main-content" tabindex="-1"><router-outlet (activate)="scrollToTop()" /></main>
+
+<footer class="app-footer">
+  <span>Pruebas específicas · Ingeniería USAC</span><a routerLink="/status">Estado de conexión</a>
+</footer>

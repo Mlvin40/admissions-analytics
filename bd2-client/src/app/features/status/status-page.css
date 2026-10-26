@@ -1,0 +1,14 @@
+.page-heading { margin-bottom: 2rem; }
+h1 { font-size: clamp(1.8rem, 5vw, 2.5rem); margin: .5rem 0; }
+p { color: var(--color-text-secondary); line-height: 1.6; }
+.eyebrow { color: var(--color-text-secondary); font-size: .75rem; font-weight: 700; letter-spacing: .12em; }
+.check-form { display: flex; align-items: end; gap: 1rem; }
+.field { display: grid; gap: .5rem; flex: 1; }
+label { font-weight: 600; }
+.results { margin-top: 1.5rem; min-height: 3rem; }
+dl { margin: 0; }
+.status-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid var(--color-border); }
+.status-row:last-child { border-bottom: 0; }
+dt { font-weight: 600; }
+dd { margin: 0; }
+@media (max-width: 600px) { .check-form { align-items: stretch; flex-direction: column; } }
