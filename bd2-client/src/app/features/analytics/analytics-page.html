@@ -1,0 +1,288 @@
+<header class="page-heading">
+  <div>
+    <p class="eyebrow">ANÁLISIS DOCUMENTAL</p>
+    <h1>Consultas MongoDB</h1>
+    <p>
+      Veinte perspectivas sobre las evaluaciones importadas, con criterios de conteo explícitos.
+    </p>
+  </div>
+  <a routerLink="/search" class="text-link">Buscar evaluaciones →</a>
+</header>
+<section class="panel catalog-panel">
+  <label for="analytics-query">Selecciona una consulta</label>
+  <p-select
+    inputId="analytics-query"
+    [options]="options"
+    [group]="true"
+    optionGroupLabel="label"
+    optionGroupChildren="items"
+    optionLabel="label"
+    optionValue="value"
+    [filter]="true"
+    filterBy="label"
+    [formControl]="selector"
+    (onChange)="choose($event.value)"
+    [fluid]="true"
+    appendTo="body"
+  />
+  <h2>{{ query().title }}</h2>
+  <p>{{ query().description }}</p>
+  <span class="unit-label">{{ query().unit }}</span>
+</section>
+<form class="panel" [formGroup]="form" (ngSubmit)="run()">
+  <div class="section-title">
+    <h2>Filtros de consulta</h2>
+    <span class="secondary">Los filtros se aplican al ejecutar</span>
+  </div>
+  @if (query().history) {
+    <div class="field">
+      <label for="correlativo"
+        >Identificador anónimo completo <span aria-hidden="true">*</span></label
+      ><input
+        pInputText
+        id="correlativo"
+        formControlName="correlativo"
+        autocomplete="off"
+        maxlength="4096"
+        placeholder="Correlativo literal, sin unir prefijos"
+        required
+      />
+    </div>
+  }
+  <div class="filter-grid">
+    @if (queryId() !== 'M06') {
+      <div class="field">
+        <label for="entry-year">Ciclo de ingreso</label
+        ><input
+          pInputText
+          id="entry-year"
+          type="number"
+          formControlName="entryYear"
+          min="1"
+          max="9999"
+          placeholder="Todos"
+        />
+      </div>
+    }
+    <app-dimension-picker
+      id="career-picker"
+      dimension="career"
+      label="Carrera objetivo"
+      [id]="'career-filter'"
+      [value]="form.controls.careerKey.value"
+      (valueChange)="form.controls.careerKey.setValue($event)"
+    />
+    @if (queryId() !== 'M06') {
+      <app-dimension-picker
+        dimension="subject"
+        label="Materia"
+        [id]="'subject-filter'"
+        [value]="form.controls.subjectKey.value"
+        (valueChange)="form.controls.subjectKey.setValue($event)"
+      />
+    }
+  </div>
+  @if (queryId() !== 'M06') {
+    <details class="advanced">
+      <summary>Más filtros: procedencia, resultados y edades</summary>
+      <div class="filter-grid">
+        <app-dimension-picker
+          dimension="department"
+          label="Departamento de institución"
+          [id]="'department-filter'"
+          [value]="form.controls.departmentKey.value"
+          (valueChange)="
+            form.controls.departmentKey.setValue($event);
+            form.controls.municipalityKey.setValue(null)
+          "
+        />
+        <app-dimension-picker
+          dimension="municipality"
+          label="Municipio de institución"
+          [id]="'municipality-filter'"
+          [value]="form.controls.municipalityKey.value"
+          [departmentKey]="form.controls.departmentKey.value"
+          (valueChange)="form.controls.municipalityKey.setValue($event)"
+        />
+        <app-dimension-picker
+          dimension="institutionType"
+          label="Tipo de institución"
+          [id]="'institution-filter'"
+          [value]="form.controls.institutionTypeKey.value"
+          (valueChange)="form.controls.institutionTypeKey.setValue($event)"
+        />
+        <div class="field">
+          <label for="sex-filter">Sexo registrado</label
+          ><p-select
+            inputId="sex-filter"
+            [options]="sexes"
+            optionLabel="label"
+            optionValue="value"
+            formControlName="sex"
+            [fluid]="true"
+          />
+        </div>
+        <div class="field">
+          <label for="passed-filter">Resultado</label
+          ><p-select
+            inputId="passed-filter"
+            [options]="outcomes"
+            optionLabel="label"
+            optionValue="value"
+            formControlName="passed"
+            [fluid]="true"
+          />
+        </div>
+        <div class="field">
+          <label for="min-age">Edad mínima al ingreso</label
+          ><input
+            pInputText
+            id="min-age"
+            type="number"
+            formControlName="minAge"
+            min="0"
+            max="100"
+          />
+        </div>
+        <div class="field">
+          <label for="max-age">Edad máxima al ingreso</label
+          ><input
+            pInputText
+            id="max-age"
+            type="number"
+            formControlName="maxAge"
+            min="0"
+            max="100"
+          />
+        </div>
+        <div class="field">
+          <label for="date-from">Asignación desde (UTC)</label
+          ><input pInputText id="date-from" type="date" formControlName="assignmentFrom" />
+        </div>
+        <div class="field">
+          <label for="date-to">Asignación hasta (UTC)</label
+          ><input pInputText id="date-to" type="date" formControlName="assignmentTo" />
+        </div>
+        @if (query().history) {
+          <div class="field">
+            <label for="identity-scheme">Formato del identificador</label
+            ><p-select
+              inputId="identity-scheme"
+              formControlName="identityScheme"
+              [options]="schemes"
+              optionLabel="label"
+              optionValue="value"
+              [fluid]="true"
+            />
+          </div>
+        }
+      </div>
+    </details>
+  }
+  <div class="filter-grid compact">
+    <div class="field">
+      <label for="page-limit">Resultados por página</label
+      ><p-select
+        inputId="page-limit"
+        [options]="limits"
+        optionLabel="label"
+        optionValue="value"
+        formControlName="limit"
+        [fluid]="true"
+      />
+    </div>
+    @if (!query().history) {
+      <div class="field">
+        <label for="sort-filter">Ordenar por</label
+        ><p-select
+          inputId="sort-filter"
+          [options]="sorts()"
+          optionLabel="label"
+          optionValue="value"
+          formControlName="sort"
+          [fluid]="true"
+        />
+      </div>
+      @if (form.controls.sort.value) {
+        <div class="field">
+          <label for="direction-filter">Dirección</label
+          ><p-select
+            inputId="direction-filter"
+            [options]="directions"
+            optionLabel="label"
+            optionValue="value"
+            formControlName="direction"
+            [fluid]="true"
+          />
+        </div>
+      }
+    }
+  </div>
+  @if (validation()) {
+    <p-message severity="warn">{{ validation() }}</p-message>
+  }
+  <div class="form-actions">
+    <p-button
+      type="submit"
+      label="Ejecutar consulta"
+      [loading]="loading()"
+      [disabled]="loading()"
+    /><span class="secondary">{{
+      query().history
+        ? 'El historial usa una identidad completa y orden cronológico.'
+        : 'Una identidad puede aparecer en varios grupos; no sumes grupos como personas globales.'
+    }}</span>
+  </div>
+</form>
+<section
+  class="panel results-panel"
+  [attr.aria-busy]="loading()"
+  aria-labelledby="analytics-results-title"
+>
+  <div class="section-title">
+    <h2 id="analytics-results-title">Resultados · {{ queryId() }}</h2>
+    @if (page(); as p) {
+      <span class="secondary">{{ p.executionMs }} ms</span>
+    }
+  </div>
+  <app-request-state [loading]="loading()" [error]="error()" (retry)="fetch(pageIndex())" />
+  @if (page(); as p) {
+    @if (p.summary; as summary) {
+      @if (summary.refreshRequired) {
+        <p-message severity="warn">{{
+          summary.generatedAt
+            ? 'El resumen está desactualizado. Estos resultados corresponden al corte indicado; las otras consultas usan los datos actuales.'
+            : 'El resumen aún no está disponible. Puedes utilizar las otras consultas por carrera.'
+        }}</p-message>
+      }
+      @if (summary.generatedAt) {
+        <p class="secondary">
+          Corte: {{ summary.generatedAt | date: 'dd/MM/yyyy HH:mm' : 'UTC' }} UTC ·
+          {{ summary.sourceEvaluationCount.toLocaleString('es-GT') }} evaluaciones.
+        </p>
+      }
+    }
+    @if (p.excludedEvaluations > 0) {
+      <p-message severity="info"
+        >{{ p.excludedEvaluations.toLocaleString('es-GT') }} evaluaciones del filtro quedan fuera
+        por calidad o contexto requerido por esta consulta.</p-message
+      >
+    }
+    @if (metrics(); as m) {
+      <app-metric-results [query]="query()" [rows]="m.items" />
+    }
+    @if (history(); as h) {
+      <app-history-results [rows]="h.items" [details]="queryId() === 'M15'" />
+    }
+    <app-pagination
+      [busy]="loading()"
+      [canPrevious]="pageIndex() > 0"
+      [canNext]="canNext()"
+      [caption]="caption()"
+      (previous)="previous()"
+      (next)="next()"
+    />
+  } @else if (!loading() && !error()) {
+    <p class="empty-state">Configura los filtros y ejecuta la consulta para ver sus resultados.</p>
+  }
+</section>

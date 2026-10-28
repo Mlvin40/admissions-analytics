@@ -1,0 +1,134 @@
+<header class="page-heading dashboard-heading">
+  <div>
+    <p class="eyebrow">FACULTAD DE INGENIERÍA · USAC</p>
+    <h1>Panorama de evaluaciones</h1>
+    <p>
+      Resultados reales de las pruebas específicas. Explora tendencias, procedencia y oportunidades
+      observadas.
+    </p>
+  </div>
+  <p-button
+    label="Actualizar estadísticas"
+    severity="secondary"
+    [loading]="loading()"
+    [disabled]="loading()"
+    (onClick)="reload()"
+  />
+</header>
+<app-request-state [loading]="loading()" [error]="error()" (retry)="reload()" />
+@if (ready()) {
+  <section class="kpi-grid" aria-label="Indicadores de evaluaciones">
+    <article class="kpi">
+      <span>Evaluaciones</span
+      ><strong data-testid="evaluation-total">{{ format(totals().count) }}</strong
+      ><small>Registros únicos después de deduplicar</small>
+    </article>
+    <article class="kpi">
+      <span>Evaluaciones aprobadas</span><strong>{{ format(totals().approved) }}</strong
+      ><small>Un aspirante puede aprobar varias</small>
+    </article>
+    <article class="kpi featured">
+      <span>Aprobación observada</span
+      ><strong>{{ format(totals().rate, 2) }}{{ totals().rate !== null ? ' %' : '' }}</strong
+      ><small>Sobre resultados conocidos</small>
+    </article>
+    <article class="kpi">
+      <span>Ciclos de ingreso</span><strong>{{ format(totals().cycles) }}</strong
+      ><small>Año de ingreso solicitado</small>
+    </article>
+  </section>
+  @if (!totals().count) {
+    <section class="panel empty-state">
+      <h2>Aún no hay evaluaciones</h2>
+      <p>Importa archivos para comenzar a analizar sus resultados.</p>
+      <a routerLink="/data-import">Ir a Carga CSV</a>
+    </section>
+  }
+  <section class="panel">
+    <div class="section-title">
+      <div>
+        <p class="eyebrow">EVOLUCIÓN</p>
+        <h2>Aprobación a través de los ciclos</h2>
+      </div>
+      <a routerLink="/analytics" [queryParams]="{ query: 'M20' }">Ver consulta →</a>
+    </div>
+    <app-trend-chart
+      title="Evaluaciones aprobadas sobre resultados conocidos (%)"
+      [data]="trend()"
+    />
+    <details>
+      <summary>Ver cifras por ciclo</summary>
+      <div class="table-scroll" tabindex="0" aria-label="Evolución anual">
+        <table class="simple-table">
+          <thead>
+            <tr>
+              <th>Ciclo</th>
+              <th>Evaluaciones</th>
+              <th>Aprobadas</th>
+              <th>Reprobadas</th>
+              <th>Desconocidas</th>
+              <th>Aprobación</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of annual(); track $index) {
+              <tr>
+                <td>{{ row.group.entryYear ?? 'Sin registro' }}</td>
+                <td>{{ format(row.evaluationCount) }}</td>
+                <td>{{ format(row.approvedCount) }}</td>
+                <td>{{ format(row.failedCount) }}</td>
+                <td>{{ format(row.unknownOutcomeCount) }}</td>
+                <td>
+                  {{ format(row.approvalRate, 2) }}{{ row.approvalRate !== null ? ' %' : '' }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </details>
+  </section>
+  <div class="dashboard-grid">
+    <section class="panel">
+      <div class="section-title">
+        <h2>Aprobación por materia</h2>
+        <a routerLink="/analytics" [queryParams]="{ query: 'M04' }">Detalle →</a>
+      </div>
+      <app-bar-chart title="Porcentaje de aprobación" [data]="subjectRates()" [percent]="true" />
+    </section>
+    <section class="panel">
+      <div class="section-title">
+        <h2>Distribución de evaluaciones</h2>
+        <a routerLink="/analytics" [queryParams]="{ query: 'M02' }">Aprobadas →</a>
+      </div>
+      <app-bar-chart title="Evaluaciones registradas por materia" [data]="subjectCounts()" />
+    </section>
+  </div>
+  <div class="dashboard-grid">
+    <section class="panel">
+      <h2>Procedencia educativa</h2>
+      <app-bar-chart
+        title="Aspirantes únicos dentro de cada tipo de institución"
+        [data]="originCounts()"
+      />
+      <p class="secondary">
+        Una identidad puede aparecer en varios tipos de institución. La suma de grupos no representa
+        aspirantes globales.
+      </p>
+      <a routerLink="/analytics" [queryParams]="{ query: 'M01' }">Examinar procedencia →</a>
+    </section>
+    <section class="panel explore-card">
+      <p class="eyebrow">PROFUNDIZA EN LOS DATOS</p>
+      <h2>De los resultados a las relaciones</h2>
+      <p>
+        Consulta un historial completo, compara carreras o explora coincidencias de procedencia sin
+        confundirlas con relaciones personales.
+      </p>
+      <a routerLink="/search" class="feature-link">Buscar evaluaciones <span>→</span></a
+      ><a routerLink="/analytics" class="feature-link"
+        >Explorar 20 consultas MongoDB <span>→</span></a
+      ><a routerLink="/graph" class="feature-link">Consultar grafos Neo4j <span>→</span></a
+      ><a routerLink="/status" class="secondary">Comprobar conexión técnica</a>
+    </section>
+  </div>
+}

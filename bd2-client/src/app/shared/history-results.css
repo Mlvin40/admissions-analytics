@@ -1,0 +1,25 @@
+.row-links {
+  display: flex;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+.outcome {
+  font-size: 0.8rem;
+  display: inline-block;
+  border-left: 3px solid var(--color-info);
+  background: var(--color-surface-muted);
+  padding: 0.3rem 0.5rem;
+  white-space: nowrap;
+}
+.outcome.approved {
+  border-color: var(--color-success);
+}
+.outcome.failed {
+  border-color: var(--color-danger);
+}
+.row-links {
+  min-width: 120px;
+}
+.row-links a {
+  font-size: 0.8rem;
+}
