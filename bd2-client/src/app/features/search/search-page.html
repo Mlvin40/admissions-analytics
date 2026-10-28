@@ -1,0 +1,118 @@
+<header class="page-heading">
+  <div>
+    <p class="eyebrow">EXPLORACIÓN DE REGISTROS</p>
+    <h1>Buscar evaluaciones</h1>
+    <p>Combina criterios para encontrar registros reales y abrir su historial o sus relaciones.</p>
+  </div>
+</header>
+<form class="panel" [formGroup]="form" (ngSubmit)="search()">
+  <div class="field">
+    <label for="search-identity">Identificador anónimo completo</label
+    ><input
+      pInputText
+      id="search-identity"
+      formControlName="correlativo"
+      maxlength="4096"
+      autocomplete="off"
+      placeholder="Correlativo literal; no se unen coincidencias parciales"
+    />
+  </div>
+  <div class="filter-grid">
+    <div class="field">
+      <label for="search-year">Ciclo de ingreso</label
+      ><input
+        pInputText
+        type="number"
+        id="search-year"
+        formControlName="entryYear"
+        min="1"
+        max="9999"
+        placeholder="Todos"
+      />
+    </div>
+    <app-dimension-picker
+      dimension="career"
+      label="Carrera objetivo"
+      [id]="'search-career'"
+      [value]="form.controls.careerKey.value"
+      (valueChange)="form.controls.careerKey.setValue($event)"
+    />
+    <app-dimension-picker
+      dimension="subject"
+      label="Materia"
+      [id]="'search-subject'"
+      [value]="form.controls.subjectKey.value"
+      (valueChange)="form.controls.subjectKey.setValue($event)"
+    />
+    <app-dimension-picker
+      dimension="department"
+      label="Departamento de institución"
+      [id]="'search-department'"
+      [value]="form.controls.departmentKey.value"
+      (valueChange)="
+        form.controls.departmentKey.setValue($event); form.controls.municipalityKey.setValue(null)
+      "
+    />
+    <app-dimension-picker
+      dimension="municipality"
+      label="Municipio de institución"
+      [id]="'search-municipality'"
+      [value]="form.controls.municipalityKey.value"
+      [departmentKey]="form.controls.departmentKey.value"
+      (valueChange)="form.controls.municipalityKey.setValue($event)"
+    />
+    <app-dimension-picker
+      dimension="institutionType"
+      label="Tipo de institución"
+      [id]="'search-institution'"
+      [value]="form.controls.institutionTypeKey.value"
+      (valueChange)="form.controls.institutionTypeKey.setValue($event)"
+    />
+    <div class="field">
+      <label for="search-limit">Resultados por página</label
+      ><p-select
+        inputId="search-limit"
+        [options]="limits"
+        optionLabel="label"
+        optionValue="value"
+        formControlName="limit"
+        [fluid]="true"
+      />
+    </div>
+  </div>
+  @if (validation()) {
+    <p-message severity="warn">{{ validation() }}</p-message>
+  }
+  <div class="form-actions">
+    <p-button
+      type="submit"
+      label="Buscar evaluaciones"
+      [loading]="loading()"
+      [disabled]="loading()"
+    /><span class="secondary"
+      >Busca nombres en las listas. Los criterios se combinan al buscar.</span
+    >
+  </div>
+</form>
+<section class="panel" aria-labelledby="search-results-title" [attr.aria-busy]="loading()">
+  <h2 id="search-results-title">Resultados de búsqueda</h2>
+  <app-request-state [loading]="loading()" [error]="error()" (retry)="fetch(offset())" />
+  @if (result(); as page) {
+    <p class="secondary">
+      Se cuentan evaluaciones, no personas. Una identidad puede tener varias materias e intentos.
+    </p>
+    <app-history-results [rows]="page.items" [details]="true" />
+    <app-pagination
+      [busy]="loading()"
+      [canPrevious]="page.offset > 0"
+      [canNext]="page.offset + page.limit < page.total"
+      [caption]="caption()"
+      (previous)="previous()"
+      (next)="next()"
+    />
+  } @else if (!loading() && !error()) {
+    <p class="empty-state">
+      Introduce criterios o pulsa Buscar para explorar las evaluaciones más recientes.
+    </p>
+  }
+</section>
