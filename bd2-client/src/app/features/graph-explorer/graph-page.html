@@ -1,0 +1,199 @@
+<header class="page-heading">
+  <div>
+    <p class="eyebrow">RELACIONES OBSERVADAS</p>
+    <h1>Grafos Neo4j</h1>
+    <p>
+      Cinco consultas de lectura y un explorador de relaciones reales, siempre con alcance limitado.
+    </p>
+  </div>
+  <a routerLink="/search">Encontrar un aspirante →</a>
+</header>
+<section class="panel catalog-panel">
+  <label for="graph-query">Selecciona una consulta</label
+  ><p-select
+    inputId="graph-query"
+    [filter]="true"
+    filterBy="label"
+    [options]="options"
+    optionLabel="label"
+    optionValue="value"
+    [formControl]="selector"
+    (onChange)="choose($event.value)"
+    [fluid]="true"
+    appendTo="body"
+  />
+  <h2>{{ query().title }}</h2>
+  <p>{{ query().description }}</p>
+  <span class="unit-label">{{ query().unit }}</span>
+</section>
+<form class="panel" [formGroup]="form" (ngSubmit)="run()">
+  <h2>Alcance de la exploración</h2>
+  <div class="filter-grid">
+    <div class="field">
+      <label for="graph-year">Ciclo de ingreso *</label
+      ><input
+        pInputText
+        type="number"
+        id="graph-year"
+        formControlName="entryYear"
+        min="1"
+        max="9999"
+        required
+      />
+    </div>
+    @if (requiresApplicant()) {
+      <div class="field field-wide">
+        <label for="graph-applicant">Clave completa del aspirante *</label
+        ><input
+          pInputText
+          id="graph-applicant"
+          formControlName="applicantKey"
+          placeholder="full32:correlativo o short:correlativo"
+          maxlength="4102"
+          autocomplete="off"
+          aria-required="true"
+        /><small
+          >Incluye el formato. Puedes abrir esta vista desde un resultado del buscador.</small
+        >
+      </div>
+    }
+    @if (['N01', 'N02', 'N04'].includes(queryId())) {
+      <app-dimension-picker
+        dimension="subject"
+        [label]="queryId() === 'N04' ? 'Materia *' : 'Materia'"
+        [id]="'graph-subject'"
+        [value]="form.controls.subjectKey.value"
+        (valueChange)="form.controls.subjectKey.setValue($event)"
+      />
+    }
+    @if (queryId() === 'N02') {
+      <app-dimension-picker
+        dimension="career"
+        label="Carrera"
+        [id]="'graph-career'"
+        [value]="form.controls.careerKey.value"
+        (valueChange)="form.controls.careerKey.setValue($event)"
+      />
+    }
+    @if (queryId() === 'N03') {
+      <app-dimension-picker
+        dimension="department"
+        label="Departamento *"
+        [id]="'graph-department'"
+        [value]="form.controls.departmentKey.value"
+        (valueChange)="
+          form.controls.departmentKey.setValue($event); form.controls.municipalityKey.setValue(null)
+        "
+      />
+    }
+    @if (['N03', 'N05'].includes(queryId())) {
+      <app-dimension-picker
+        dimension="municipality"
+        label="Municipio de institución"
+        [id]="'graph-municipality'"
+        [value]="form.controls.municipalityKey.value"
+        [departmentKey]="form.controls.departmentKey.value"
+        (valueChange)="form.controls.municipalityKey.setValue($event)"
+      />
+    }
+    <div class="field">
+      <label for="graph-limit">{{
+        queryId() === 'N05' ? 'Caminos por página' : 'Filas por página'
+      }}</label
+      ><p-select
+        inputId="graph-limit"
+        [options]="limits()"
+        optionLabel="label"
+        optionValue="value"
+        formControlName="limit"
+        [fluid]="true"
+      />
+    </div>
+  </div>
+  @if (validation()) {
+    <p-message severity="warn">{{ validation() }}</p-message>
+  }
+  <div class="form-actions">
+    <p-button
+      type="submit"
+      label="Ejecutar consulta Neo4j"
+      [loading]="loading()"
+      [disabled]="loading()"
+    /><span class="secondary">{{
+      queryId() === 'N05'
+        ? 'Hasta 25 caminos de cuatro relaciones; no se carga el grafo completo.'
+        : 'Ciclo obligatorio y resultados paginados con orden estable.'
+    }}</span>
+  </div>
+</form>
+<section class="panel" [attr.aria-busy]="loading()" aria-labelledby="graph-results-title">
+  <div class="section-title">
+    <h2 id="graph-results-title">Resultados · {{ queryId() }}</h2>
+    @if (page(); as p) {
+      <span class="secondary">{{ p.executionMs }} ms</span>
+    }
+  </div>
+  <app-request-state [loading]="loading()" [error]="error()" (retry)="fetch(offset())" />
+  @if (page(); as p) {
+    @if (queryId() === 'N01') {
+      <app-history-results [rows]="history()" />
+    } @else if (queryId() === 'N05' && p.graph && p.graph.nodes.length) {
+      <app-graph-canvas [data]="p.graph" />
+    } @else if (queryId() === 'N05') {
+      <p class="empty-state">
+        No se encontraron caminos de procedencia compartida para estos filtros.
+      </p>
+    } @else {
+      <div
+        class="table-scroll"
+        tabindex="0"
+        aria-label="Resultados Neo4j, desplazamiento horizontal"
+      >
+        <p-table [value]="rows()" [tableStyle]="{ 'min-width': '40rem' }" size="small"
+          ><ng-template #header
+            ><tr>
+              @for (column of columns(); track $index) {
+                <th>{{ column }}</th>
+              }
+            </tr></ng-template
+          ><ng-template #body let-row
+            ><tr>
+              @for (cell of row.cells; track $index) {
+                <td class="identifier">{{ cell }}</td>
+              }
+            </tr></ng-template
+          ><ng-template #emptymessage
+            ><tr>
+              <td [attr.colspan]="columns().length">No hay coincidencias con estos filtros.</td>
+            </tr></ng-template
+          ></p-table
+        >
+      </div>
+    }
+    <app-pagination
+      [busy]="loading()"
+      [canPrevious]="offset() > 0"
+      [canNext]="p.hasMore && offset() + p.limit <= 10000"
+      [caption]="caption()"
+      (previous)="previous()"
+      (next)="next()"
+    />
+    @if (p.hasMore && offset() + p.limit > 10000) {
+      <p-message severity="info"
+        >Se alcanzó el límite de exploración. Reduce el alcance de los filtros.</p-message
+      >
+    }
+    <details>
+      <summary>Criterios del resultado</summary>
+      <ul>
+        @for (note of p.notes; track $index) {
+          <li>{{ note }}</li>
+        }
+      </ul>
+    </details>
+  } @else if (!loading() && !error()) {
+    <p class="empty-state">
+      Selecciona una consulta, completa los filtros obligatorios y ejecútala.
+    </p>
+  }
+</section>
