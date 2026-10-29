@@ -16,6 +16,16 @@ describe('Analysis read contracts', () => {
     http = TestBed.inject(HttpTestingController);
   });
   afterEach(() => http.verify());
+  it('generates the summary only through the explicit refresh POST', () => {
+    let count: number | undefined;
+    api.refreshCareerSummary().subscribe((result) => (count = result.careerCount));
+    const request = http.expectOne('/api/analytics/career-summary/refresh');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toBeNull();
+    expect(request.request.params.keys()).toEqual([]);
+    request.flush({ careerCount: 17, summary: { generatedAt: '2026-11-02T00:00:00Z' } });
+    expect(count).toBe(17);
+  });
   it('exposes all twenty MongoDB and five Neo4j contracts through relative GET URLs', () => {
     expect(ANALYTICS_QUERIES.map((q) => q.id)).toEqual(
       Array.from({ length: 20 }, (_, i) => 'M' + String(i + 1).padStart(2, '0')),

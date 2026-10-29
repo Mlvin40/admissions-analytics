@@ -8,21 +8,13 @@
 .topbar-inner {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 1rem;
   border: 0;
   border-radius: 0;
   max-width: 1360px;
   margin: auto;
   padding: 1rem 1.5rem;
-}
-.brand {
-  font-weight: 800;
-  font-size: 1.15rem;
-}
-.brand span {
-  font-weight: 500;
-  color: var(--color-text-secondary);
 }
 nav a {
   display: inline-block;
@@ -64,16 +56,12 @@ main {
   }
 }
 
-.brand {
-  text-decoration: none;
-  color: var(--color-text-main);
-}
 .app-footer {
   max-width: 1360px;
   margin: 0 auto;
   padding: 1.5rem;
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 1rem;
   border-top: 1px solid var(--color-border);
   font-size: 0.82rem;
@@ -85,8 +73,5 @@ main {
 @media (max-width: 600px) {
   main {
     padding: 1.5rem 0.85rem;
-  }
-  .app-footer {
-    flex-direction: column;
   }
 }

@@ -83,6 +83,10 @@ export interface SummaryInfo {
   sourceEvaluationCount: number;
   refreshRequired: boolean;
 }
+export interface SummaryRefreshResult {
+  careerCount: number;
+  summary: SummaryInfo;
+}
 export interface AnalyticsPage<T> {
   query: string;
   unit: string;

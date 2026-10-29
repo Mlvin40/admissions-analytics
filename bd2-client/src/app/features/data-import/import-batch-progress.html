@@ -1,0 +1,93 @@
+<section class="batch" [attr.aria-labelledby]="'batch-title-' + batch().id">
+  <div class="heading">
+    <h2 [id]="'batch-title-' + batch().id">Progreso del envío {{ batch().id }}</h2>
+    <strong class="percentage">{{ progress().percent | number: '1.0-1' }} %</strong>
+  </div>
+  <p-progressbar
+    [value]="progress().percent"
+    [showValue]="false"
+    [ariaLabel]="'Archivos finalizados del envío ' + batch().id"
+  />
+  <p class="status" aria-live="polite">
+    {{ progress().completed }} de {{ progress().total }} archivos finalizados ·
+    {{ progress().queued }} en cola
+  </p>
+  @for (file of progress().running; track file.id) {
+    <p class="current">
+      Procesando: <strong>{{ file.fileName }}</strong>
+    </p>
+  }
+  @if (!progress().finished && !progress().running.length) {
+    <p>Esperando el siguiente estado del servidor.</p>
+  }
+  <dl class="counters" aria-label="Registros observados del envío">
+    <div>
+      <dt>Leídos</dt>
+      <dd>{{ progress().read | number }}</dd>
+    </div>
+    <div>
+      <dt>Procesados</dt>
+      <dd>{{ progress().processed | number }}</dd>
+    </div>
+    <div>
+      <dt>Rechazados</dt>
+      <dd>{{ progress().rejected | number }}</dd>
+    </div>
+    <div>
+      <dt>Pendientes</dt>
+      <dd>{{ progress().pending | number }}</dd>
+    </div>
+  </dl>
+  @if (batch().unavailableIds.length) {
+    <p-message severity="warn"
+      >No se pudo actualizar {{ batch().unavailableIds.length }} operación(es). Se conserva el
+      último estado confirmado y se reintentará la consulta automáticamente.</p-message
+    >
+  }
+  @if (progress().finished) {
+    @if (!batch().notificationDismissed) {
+      <div class="completion-notice" aria-live="polite">
+        <p-message
+          [severity]="progress().retryable.length || progress().observations ? 'warn' : 'success'"
+        >
+          {{ summary() }} Procesados: {{ progress().processed | number }}. Rechazados:
+          {{ progress().rejected | number }}.
+        </p-message>
+        <p-button
+          label="Cerrar aviso"
+          severity="secondary"
+          [ariaLabel]="'Cerrar aviso del envío ' + batch().id"
+          (onClick)="dismiss.emit(batch().id)"
+        />
+      </div>
+    }
+    <div class="final-summary">
+      <h3>Resultado del envío</h3>
+      <p>{{ summary() }}</p>
+      <p>
+        Procesados: {{ progress().processed | number }} · Rechazados:
+        {{ progress().rejected | number }} · Pendientes: {{ progress().pending | number }}
+      </p>
+      @for (file of progress().retryable; track file.id) {
+        <div class="retry-action">
+          <p>
+            <strong>{{ file.fileName }}</strong> ·
+            {{
+              file.status === 'PARTIAL'
+                ? 'Parcial'
+                : file.status === 'INTERRUPTED'
+                  ? 'Interrumpido'
+                  : 'Error'
+            }}. {{ file.message }}
+          </p>
+          <p-button
+            label="Reintentar archivo"
+            severity="secondary"
+            [ariaLabel]="'Reintentar archivo ' + file.fileName + ' del envío ' + batch().id"
+            (onClick)="retryImport.emit(file)"
+          />
+        </div>
+      }
+    </div>
+  }
+</section>

@@ -3,77 +3,231 @@
   <p>Selecciona uno o varios archivos de pruebas específicas para importar sus evaluaciones.</p>
 </header>
 <p-card>
-  <p class="help">Hasta 10 archivos CSV por envío, de 16 MB como máximo cada uno. Repetir un archivo conserva sus evaluaciones sin duplicarlas.</p>
-  <p-fileupload #uploader name="files" accept=".csv" [multiple]="true" [customUpload]="true"
-    [maxFileSize]="16777216" [fileLimit]="10" [disabled]="loading()"
+  <p class="help">
+    Hasta 10 archivos CSV por envío, de 16 MB como máximo cada uno. Repetir un archivo conserva sus
+    evaluaciones sin duplicarlas.
+  </p>
+  <p-fileupload
+    #uploader
+    name="files"
+    accept=".csv"
+    [multiple]="true"
+    [customUpload]="true"
+    [maxFileSize]="16777216"
+    [fileLimit]="10"
+    [disabled]="loading()"
     invalidFileSizeMessageSummary="{0}: archivo demasiado grande."
     invalidFileSizeMessageDetail="El tamaño máximo es de 16 MB."
     invalidFileTypeMessageSummary="{0}: formato no permitido."
     invalidFileTypeMessageDetail="Selecciona un archivo CSV."
     invalidFileLimitMessageSummary="Demasiados archivos."
     invalidFileLimitMessageDetail="Selecciona como máximo 10 archivos por envío."
-    chooseLabel="Seleccionar CSV" uploadLabel="Importar archivos" cancelLabel="Limpiar selección"
-    (uploadHandler)="upload($event.files, uploader)">
-    <ng-template #empty><p>Arrastra aquí los archivos CSV o utiliza «Seleccionar CSV».</p></ng-template>
+    chooseLabel="Seleccionar CSV"
+    uploadLabel="Importar archivos"
+    cancelLabel="Limpiar selección"
+    (uploadHandler)="upload($event.files, uploader)"
+  >
+    <ng-template #empty
+      ><p>Arrastra aquí los archivos CSV o utiliza «Seleccionar CSV».</p></ng-template
+    >
   </p-fileupload>
   <div aria-live="polite" class="messages">
-    @if (loading()) { <p-message severity="info">Enviando archivos…</p-message> }
-    @if (notice()) { <p-message severity="success">{{ notice() }}</p-message> }
-    @if (actionError()) { <p-message severity="error">{{ actionError() }}</p-message> }
-    @if (connectionError()) { <p-message severity="error">No se pueden actualizar los resultados. Se volverá a intentar la conexión automáticamente.</p-message> }
+    @if (loading()) {
+      <p-message severity="info">Enviando archivos…</p-message>
+    }
+    @if (notice()) {
+      <p-message severity="success">{{ notice() }}</p-message>
+    }
+    @if (actionError()) {
+      <p-message severity="error">{{ actionError() }}</p-message>
+    }
+    @if (connectionError()) {
+      <p-message severity="error"
+        >No se pueden actualizar los resultados. Se volverá a intentar la conexión
+        automáticamente.</p-message
+      >
+    }
   </div>
 </p-card>
+@for (batch of batchTracker.batches(); track batch.id) {
+  <app-import-batch-progress
+    [batch]="batch"
+    (dismiss)="batchTracker.dismiss($event)"
+    (retryImport)="retry($event)"
+  />
+}
 <section aria-labelledby="results-title" class="results">
   <h2 id="results-title">Resultados por archivo</h2>
-  <p>Los procesados están confirmados en ambas bases de datos. Los pendientes necesitan reintento; los rechazados incluyen su motivo.</p>
-  @if (initialLoading()) { <p-message severity="info">Consultando importaciones…</p-message> }
-  <div class="table-scroll" tabindex="0" aria-label="Resultados de importación, desplazamiento horizontal">
-    <p-table [value]="results()" [tableStyle]="{ 'min-width': '58rem' }">
-      <ng-template #header><tr><th>Archivo y estado</th><th>Leídos</th><th>Procesados</th><th>Rechazados</th><th>Pendientes</th><th>Tiempo</th><th>Acciones</th></tr></ng-template>
+  <p>
+    Los procesados están confirmados en ambas bases de datos. Los pendientes necesitan reintento;
+    los rechazados incluyen su motivo.
+  </p>
+  @if (initialLoading()) {
+    <p-message severity="info">Consultando importaciones…</p-message>
+  }
+  <div
+    class="table-scroll"
+    tabindex="0"
+    aria-label="Resultados de importación, desplazamiento horizontal"
+  >
+    <p-table
+      [value]="results()"
+      dataKey="id"
+      [rowTrackBy]="trackImport"
+      [tableStyle]="{ 'min-width': '58rem' }"
+    >
+      <ng-template #header
+        ><tr>
+          <th>Archivo y estado</th>
+          <th>Leídos</th>
+          <th>Procesados</th>
+          <th>Rechazados</th>
+          <th>Pendientes</th>
+          <th>Tiempo</th>
+          <th>Acciones</th>
+        </tr></ng-template
+      >
       <ng-template #body let-result>
         <tr>
-          <td><strong>{{ result.fileName }}</strong><br>
-            <p-tag [value]="statusLabel(result.status)" [style]="{ color: 'var(--color-text-main)', background: 'var(--color-surface-muted)', borderLeft: '3px solid ' + statusColor(result.status) }" />
+          <td>
+            <strong>{{ result.fileName }}</strong
+            ><br />
+            <p-tag
+              [value]="statusLabel(result.status)"
+              [style]="{
+                color: 'var(--color-text-main)',
+                background: 'var(--color-surface-muted)',
+                borderLeft: '3px solid ' + statusColor(result.status),
+              }"
+            />
             <p class="file-message">{{ result.message }}</p>
-            <details><summary>Detalle de procesamiento</summary>
+            <details
+              [open]="expandedImportIds().has(result.id)"
+              (toggle)="onProcessingToggle(result.id, $event)"
+            >
+              <summary>Detalle de procesamiento</summary>
               <p>Válidos: {{ result.valid }} · Confirmados en MongoDB: {{ result.mongoStored }}</p>
-              <p>Nuevos: {{ result.newEvaluations }} · Ya existentes: {{ result.alreadyExisting }} · Repeticiones dentro del CSV: {{ result.duplicates }}</p>
+              <p>
+                Nuevos: {{ result.newEvaluations }} · Ya existentes: {{ result.alreadyExisting }} ·
+                Repeticiones dentro del CSV: {{ result.duplicates }}
+              </p>
               <p>Intento de importación: {{ result.attempt }}</p>
             </details>
           </td>
-          <td>{{ result.totalRead }}</td><td>{{ result.processed }}</td><td>{{ result.rejected }}</td><td>{{ result.pending }}</td>
-          <td>{{ result.elapsedMs / 1000 | number:'1.1-1' }} s</td>
-          <td><div class="actions">
-            @if (result.rejected > 0) { <p-button label="Ver rechazos" severity="secondary" (onClick)="showRejections(result)" [attr.aria-label]="'Ver rechazos de ' + result.fileName" /> }
-            @if (canRetry(result.status)) { <p-button label="Reintentar" (onClick)="retry(result)" [attr.aria-label]="'Reintentar ' + result.fileName" /> }
-          </div></td>
+          <td>{{ result.totalRead }}</td>
+          <td>{{ result.processed }}</td>
+          <td>{{ result.rejected }}</td>
+          <td>{{ result.pending }}</td>
+          <td>{{ result.elapsedMs / 1000 | number: '1.1-1' }} s</td>
+          <td>
+            <div class="actions">
+              @if (result.rejected > 0) {
+                <p-button
+                  label="Ver rechazos"
+                  severity="secondary"
+                  (onClick)="showRejections(result)"
+                  [ariaLabel]="'Ver rechazos de ' + result.fileName"
+                />
+              }
+              @if (canRetry(result.status)) {
+                <p-button
+                  label="Reintentar"
+                  (onClick)="retry(result)"
+                  [attr.aria-label]="'Reintentar ' + result.fileName"
+                />
+              }
+            </div>
+          </td>
         </tr>
       </ng-template>
-      <ng-template #emptymessage><tr><td colspan="7">Todavía no hay importaciones.</td></tr></ng-template>
+      <ng-template #emptymessage
+        ><tr>
+          <td colspan="7">Todavía no hay importaciones.</td>
+        </tr></ng-template
+      >
     </p-table>
   </div>
   <div class="pagination">
-    <p-button label="Anteriores" severity="secondary" [disabled]="offset() === 0" (onClick)="offset.set(offset() - 50)" />
+    <p-button
+      label="Anteriores"
+      severity="secondary"
+      [disabled]="offset() === 0"
+      (onClick)="offset.set(offset() - 50)"
+    />
     <span>Desde {{ offset() + 1 }}</span>
-    <p-button label="Siguientes" severity="secondary" [disabled]="results().length < 50" (onClick)="offset.set(offset() + 50)" />
+    <p-button
+      label="Siguientes"
+      severity="secondary"
+      [disabled]="results().length < 50"
+      (onClick)="offset.set(offset() + 50)"
+    />
   </div>
 </section>
-@if (selected(); as file) {
-  <section aria-labelledby="rejections-title">
-    <h2 id="rejections-title">Rechazos de {{ file.fileName }}</h2>
-    @if (rejectionLoading()) { <p-message severity="info">Consultando rechazos…</p-message> }
-    @if (rejected(); as page) {
-      <p>Registro numerado desde 1 después del encabezado. Los valores mostrados son una vista previa del origen.</p>
-      @for (item of page.items; track item.recordNumber) {
-        <p-card><strong>Registro {{ item.recordNumber }}</strong><p>{{ item.reason }}</p>
-          <details><summary>Valores de origen</summary><pre>{{ item.values | json }}</pre></details>
-        </p-card>
-      }
-      <div class="pagination">
-        <p-button label="Rechazos anteriores" [disabled]="page.offset === 0" (onClick)="showRejections(file, page.offset - page.limit)" />
-        <span>{{ page.total }} rechazados</span>
-        <p-button label="Rechazos siguientes" [disabled]="page.offset + page.limit >= page.total" (onClick)="showRejections(file, page.offset + page.limit)" />
+<p-dialog
+  [visible]="selected() !== null"
+  (visibleChange)="onRejectionVisibility($event)"
+  [header]="'Rechazos de ' + (selected()?.fileName ?? '')"
+  [modal]="true"
+  appendTo="body"
+  [dismissableMask]="false"
+  [closeOnEscape]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [closeButtonProps]="{ ariaLabel: 'Cerrar diálogo de rechazos' }"
+  [style]="{ width: '44rem', maxWidth: 'calc(100vw - 2rem)' }"
+>
+  @if (selected(); as file) {
+    <section aria-label="Registros rechazados" [attr.aria-busy]="rejectionLoading()">
+      <p>
+        Registros que no se importaron. No son advertencias de calidad de registros válidos. La
+        numeración comienza en 1 después del encabezado; los valores son una vista previa del
+        origen.
+      </p>
+      <div aria-live="polite">
+        @if (rejectionLoading()) {
+          <p-message severity="info">Consultando rechazos…</p-message>
+        }
+        @if (rejectionError()) {
+          <p-message severity="error">{{ rejectionError() }}</p-message>
+          <p-button
+            label="Reintentar consulta de rechazos"
+            severity="secondary"
+            (onClick)="showRejections(file, rejectionOffset())"
+          />
+        }
       </div>
-    }
-  </section>
-}
+      @if (rejected(); as page) {
+        @for (item of page.items; track item.recordNumber) {
+          <article class="rejected-record">
+            <h3>Registro {{ item.recordNumber }}</h3>
+            <p>{{ item.reason }}</p>
+            <details>
+              <summary>Valores de origen</summary>
+              <pre>{{ item.values | json }}</pre>
+            </details>
+          </article>
+        } @empty {
+          <p-message severity="secondary">No hay registros rechazados en esta página.</p-message>
+        }
+        <div class="pagination">
+          <p-button
+            label="Rechazos anteriores"
+            severity="secondary"
+            [disabled]="page.offset === 0"
+            (onClick)="showRejections(file, page.offset - page.limit)"
+          />
+          <span>{{ page.total }} rechazados</span>
+          <p-button
+            label="Rechazos siguientes"
+            severity="secondary"
+            [disabled]="page.offset + page.limit >= page.total"
+            (onClick)="showRejections(file, page.offset + page.limit)"
+          />
+        </div>
+      }
+    </section>
+  }
+  <ng-template #footer
+    ><p-button label="Cerrar rechazos" severity="secondary" (onClick)="closeRejections()"
+  /></ng-template>
+</p-dialog>

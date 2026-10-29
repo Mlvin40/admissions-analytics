@@ -110,24 +110,36 @@ public class AnalyticsPipelines {
         pipeline.add(stage("$project", new Document("sources", 0).append("qualityIssues", 0).append("graphSyncState", 0)));
         pipeline.add(stage("$set", new Document("_age", ageValue())));
         switch (query) {
+            // M01 - Aspirantes por tipo de institución educativa
             case M01 -> distinctApplicants(pipeline, "institutionType");
+            // M02 - Evaluaciones aprobadas por materia
             case M02 -> { pipeline.add(stage("$match", new Document("passed", true))); evaluationCounts(pipeline, "subject"); }
+            // M03 - Aspirantes aprobados por carrera y ciclo de ingreso
             case M03 -> { pipeline.add(stage("$match", new Document("passed", true))); distinctApplicants(pipeline, "career", "entryYear"); }
+            // M04 - Porcentaje de aprobación por materia
             case M04 -> outcomeCounts(pipeline, "subject");
+            // M05 - Promedio de edad por carrera
             case M05 -> meanAge(pipeline, "career");
+            // M07 - Promedio de edad de aprobados por carrera y tipo de institución
             case M07 -> { pipeline.add(stage("$match", new Document("passed", true))); meanAge(pipeline, "career", "institutionType"); }
+            // M08 - Aspirantes aprobados por municipio y carrera
             case M08 -> { pipeline.add(stage("$match", new Document("passed", true))); distinctApplicants(pipeline, "municipality", "career"); }
+            // M09 - Evaluaciones de instituciones públicas por mes y materia
             case M09 -> {
                 pipeline.add(stage("$match", new Document("origin.institutionType.name", "PUBLICO").append("assignmentDate", new Document("$type", "date"))));
                 pipeline.add(stage("$set", new Document("_month", new Document("$dateToString", new Document("format", "%Y-%m").append("date", "$assignmentDate").append("timezone", "UTC")))));
                 evaluationCounts(pipeline, "month", "subject");
             }
+            // M10 - Cinco carreras más solicitadas por aspirantes de 16 a 18 años
             case M10 -> {
                 pipeline.add(stage("$match", new Document("career.known", true).append("_age", new Document("$gte", 16).append("$lte", 18))));
                 distinctApplicants(pipeline, "career");
             }
+            // M12 - Aspirantes por sexo y tipo de institución
             case M12 -> distinctApplicants(pipeline, "sex", "institutionType");
+            // M13 - Porcentaje de aprobación por edad
             case M13 -> { pipeline.add(stage("$match", new Document("_age", new Document("$ne", null)))); outcomeCounts(pipeline, "age"); }
+            // M14 - Promedio de oportunidades observadas por materia
             case M14 -> {
                 pipeline.add(stage("$match", new Document("$expr", expression("$and", positiveNumber("$entryYear"), expression("$eq", "$subject.known", true)))));
                 pipeline.add(stage("$group", new Document("_id", grouping("subject", "entryYear").append("applicant", "$applicant.key"))
@@ -141,12 +153,16 @@ public class AnalyticsPipelines {
                         .append("applicantCycleCount", countWhen(expression("$gt", "$observed", 0)))
                         .append("excludedAttemptGroups", countWhen(expression("$eq", "$observed", 0)))));
             }
+            // M16 - Aspirantes reprobados en la primera oportunidad por carrera
             case M16 -> {
                 pipeline.add(stage("$match", new Document("opportunity", 1).append("passed", false).append("career.known", true)));
                 distinctApplicants(pipeline, "career");
             }
+            // M17 - Cinco municipios con más aspirantes
             case M17 -> { pipeline.add(stage("$match", new Document("origin.municipality.known", true))); distinctApplicants(pipeline, "municipality"); }
+            // M18 - Porcentaje de aprobación por tipo de institución
             case M18 -> outcomeCounts(pipeline, "institutionType");
+            // M19 - Demanda de carreras por departamento
             case M19 -> {
                 pipeline.add(stage("$match", new Document("career.known", true).append("origin.department.known", true)));
                 distinctApplicants(pipeline, "department", "career");
@@ -157,6 +173,7 @@ public class AnalyticsPipelines {
                         .append("sortBy", new Document("_rankOrder", 1))
                         .append("output", new Document("rank", new Document("$documentNumber", new Document())))));
             }
+            // M20 - Evolución de aprobación por ciclo de ingreso
             case M20 -> outcomeCounts(pipeline, "entryYear");
             default -> throw new IllegalArgumentException("Esta consulta requiere un pipeline específico");
         }
@@ -210,6 +227,7 @@ public class AnalyticsPipelines {
         return pipeline;
     }
 
+    // M06 - Resumen de estadísticas por carrera
     public List<Document> summary(Date generatedAt, String snapshot, long count, String target) {
         List<Document> pipeline = new ArrayList<>();
         pipeline.add(stage("$project", new Document("sources", 0).append("qualityIssues", 0).append("graphSyncState", 0)));

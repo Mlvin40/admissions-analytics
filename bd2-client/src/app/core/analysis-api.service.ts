@@ -9,6 +9,7 @@ import {
   OptionsPage,
   Params,
   SearchPage,
+  SummaryRefreshResult,
 } from './analysis.models';
 
 export function httpParams(values: Params): HttpParams {
@@ -42,6 +43,11 @@ export class AnalysisApi {
     return this.http
       .get<AnalyticsPage<T>>('/api/analytics/' + path, { params: httpParams(params) })
       .pipe(timeout(25000));
+  }
+  refreshCareerSummary() {
+    return this.http
+      .post<SummaryRefreshResult>('/api/analytics/career-summary/refresh', null)
+      .pipe(timeout(90000));
   }
   graph<T>(path: string, params: Params) {
     return this.http

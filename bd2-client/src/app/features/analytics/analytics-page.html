@@ -226,13 +226,37 @@
       type="submit"
       label="Ejecutar consulta"
       [loading]="loading()"
-      [disabled]="loading()"
-    /><span class="secondary">{{
+      [disabled]="loading() || refreshing()"
+    />
+    @if (queryId() === 'M06') {
+      <p-button
+        type="button"
+        label="Generar / actualizar resumen"
+        severity="secondary"
+        [loading]="refreshing()"
+        [disabled]="loading() || refreshing()"
+        (onClick)="refreshSummary()"
+      />
+    }
+    <span class="secondary">{{
       query().history
         ? 'El historial usa una identidad completa y orden cronológico.'
         : 'Una identidad puede aparecer en varios grupos; no sumes grupos como personas globales.'
     }}</span>
   </div>
+  @if (queryId() === 'M06') {
+    <div aria-live="polite" [attr.aria-busy]="refreshing()">
+      @if (refreshing()) {
+        <p-message severity="info">Generando el resumen de carreras…</p-message>
+      }
+      @if (refreshNotice()) {
+        <p-message severity="success">{{ refreshNotice() }}</p-message>
+      }
+      @if (refreshError()) {
+        <p-message severity="error">{{ refreshError() }}</p-message>
+      }
+    </div>
+  }
 </form>
 <section
   class="panel results-panel"
@@ -252,7 +276,7 @@
         <p-message severity="warn">{{
           summary.generatedAt
             ? 'El resumen está desactualizado. Estos resultados corresponden al corte indicado; las otras consultas usan los datos actuales.'
-            : 'El resumen aún no está disponible. Puedes utilizar las otras consultas por carrera.'
+            : 'El resumen aún no está disponible. Pulsa Generar / actualizar resumen para crearlo.'
         }}</p-message>
       }
       @if (summary.generatedAt) {
@@ -260,6 +284,9 @@
           Corte: {{ summary.generatedAt | date: 'dd/MM/yyyy HH:mm' : 'UTC' }} UTC ·
           {{ summary.sourceEvaluationCount.toLocaleString('es-GT') }} evaluaciones.
         </p>
+        @if (!summary.refreshRequired) {
+          <p class="secondary">Resumen actualizado respecto al origen consultado.</p>
+        }
       }
     }
     @if (p.excludedEvaluations > 0) {
@@ -275,7 +302,7 @@
       <app-history-results [rows]="h.items" [details]="queryId() === 'M15'" />
     }
     <app-pagination
-      [busy]="loading()"
+      [busy]="loading() || refreshing()"
       [canPrevious]="pageIndex() > 0"
       [canNext]="canNext()"
       [caption]="caption()"

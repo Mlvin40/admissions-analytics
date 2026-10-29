@@ -1,9 +1,10 @@
 import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Subscription } from 'rxjs';
+import { finalize, Subscription } from 'rxjs';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
@@ -53,6 +54,9 @@ export class AnalyticsPage implements OnInit {
   readonly loading = signal(false);
   readonly error = signal('');
   readonly validation = signal('');
+  readonly refreshing = signal(false);
+  readonly refreshNotice = signal('');
+  readonly refreshError = signal('');
   readonly metrics = signal<ApiPage<MetricRow> | null>(null);
   readonly history = signal<ApiPage<EvaluationRecord> | null>(null);
   readonly page = computed(() => this.metrics() ?? this.history());
@@ -141,6 +145,8 @@ export class AnalyticsPage implements OnInit {
     this.loading.set(false);
     this.error.set('');
     this.validation.set('');
+    this.refreshNotice.set('');
+    this.refreshError.set('');
     this.metrics.set(null);
     this.history.set(null);
     const selected = ANALYTICS_QUERIES.find((q) => q.id === id) ?? ANALYTICS_QUERIES[3];
@@ -200,6 +206,41 @@ export class AnalyticsPage implements OnInit {
     this.cursors = [null];
     this.pageIndex.set(0);
     this.fetch(0);
+  }
+  refreshSummary() {
+    if (this.queryId() !== 'M06' || this.refreshing() || this.loading()) return;
+    this.refreshNotice.set('');
+    this.refreshError.set('');
+    this.refreshing.set(true);
+    this.api
+      .refreshCareerSummary()
+      .pipe(
+        takeUntilDestroyed(this.destroy),
+        finalize(() => this.refreshing.set(false)),
+      )
+      .subscribe({
+        next: (result) => {
+          // Una respuesta tardía no debe sustituir los resultados de otra consulta
+          if (this.queryId() !== 'M06') return;
+          if (!result.summary.generatedAt || result.summary.refreshRequired) {
+            this.refreshError.set(
+              'No se confirmó un resumen actualizado. Consulta el resumen y vuelve a intentarlo.',
+            );
+            return;
+          }
+          this.refreshNotice.set('Resumen generado correctamente.');
+          // La generación es global; la lectura posterior conserva la carrera seleccionada
+          this.run();
+        },
+        error: (error: unknown) => {
+          if (this.queryId() !== 'M06') return;
+          this.refreshError.set(
+            error instanceof HttpErrorResponse && error.status === 409
+              ? 'Los datos de origen cambiaron durante la generación. Espera a que terminen las importaciones y vuelve a intentarlo.'
+              : 'No se pudo confirmar la generación del resumen. Consulta el resumen y vuelve a intentarlo si es necesario.',
+          );
+        },
+      });
   }
   fetch(index: number) {
     this.request?.unsubscribe();

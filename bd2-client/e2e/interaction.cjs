@@ -198,12 +198,13 @@ module.exports = async function ({ page, context, base, report, output }) {
   const rejected = page.waitForResponse((r) => new URL(r.url()).pathname.endsWith('/rejections'));
   await reject.click();
   const rejectedPage = await (await rejected).json();
-  await page.getByRole('heading', { name: /Rechazos de/ }).waitFor();
+  await page.getByRole('dialog', { name: /Rechazos de/ }).waitFor();
   assert.ok(
-    (await page.locator('section[aria-labelledby="rejections-title"]').innerText()).includes(
+    (await page.getByRole('dialog', { name: /Rechazos de/ }).innerText()).includes(
       rejectedPage.items[0].reason,
     ),
   );
+  await page.getByRole('button', { name: 'Cerrar rechazos', exact: true }).click();
   report.checks.push(
     'Carga CSV preservada: selección múltiple sin enviar, historial real y motivos de rechazo',
   );
